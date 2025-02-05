@@ -4,8 +4,10 @@
   <meta charset="UTF-8" />
   <title>SmartCaptcha Mobile</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <!-- Отключаем использование некоторых сенсоров, если они не нужны -->
+  <meta http-equiv="Permissions-Policy" content="accelerometer=(), camera=(), microphone=()">
 
-  <!-- Если jsBridge не определён (например, при тестировании в браузере), создаём заглушку -->
+  <!-- Заглушка для jsBridge: если мы не в Flutter, выводим сообщения в консоль -->
   <script>
     if (!window.jsBridge) {
       window.jsBridge = {
@@ -17,7 +19,7 @@
   </script>
 
   <script>
-    // Функция вызывается, когда библиотека капчи готова
+    // Вызывается библиотекой капчи, когда она готова
     function onSmartCaptchaReady() {
       console.log("SmartCaptcha is ready");
 
@@ -26,29 +28,31 @@
         return;
       }
 
+      // Получаем параметры из URL и устанавливаем дополнительные настройки
       const params = getParameters();
       console.log("Captcha parameters:", params);
 
+      // Отключаем невидимый режим, чтобы гарантированно появлялся UI ввода
+      params.invisible = false;
+
+      // Рендерим капчу в контейнере
       const widgetId = window.smartCaptcha.render("captcha-container", params);
       console.log("Widget ID:", widgetId);
 
+      // Подписываемся на события капчи
       window.smartCaptcha.subscribe(widgetId, "challenge-visible", handleChallengeVisible);
       window.smartCaptcha.subscribe(widgetId, "challenge-hidden", handleChallengeHidden);
       window.smartCaptcha.subscribe(widgetId, "success", handleSuccess);
-
-      if (params.invisible) {
-        console.log("Executing invisible CAPTCHA");
-        window.smartCaptcha.execute(widgetId);
-      }
     }
 
+    // Обработчик успешного прохождения капчи
     function handleSuccess(token) {
       console.log("Captcha token received:", token);
       if (window.jsBridge && typeof window.jsBridge.postMessage === "function") {
         console.log("Sending token via jsBridge");
         window.jsBridge.postMessage(token);
       } else {
-        console.warn("jsBridge is not defined or does not have postMessage");
+        console.warn("jsBridge is not defined or postMessage is not a function");
       }
     }
 
@@ -60,6 +64,7 @@
       console.log("Challenge hidden");
     }
 
+    // Чтение параметров из URL и установка дополнительных значений
     function getParameters() {
       const result = {};
 
@@ -73,31 +78,32 @@
         result[key] = value;
       });
 
-      // Приводим параметры к булевому типу
+      // Приводим некоторые параметры к булевому типу
       result.test = result.test === "true";
       result.invisible = result.invisible === "true";
       result.hideShield = result.hideShield === "true";
-      result.webview = true;
-
+      result.webview = true; // даём знать, что мы в WebView
+      // Если поддерживается API, можно задать уровень устойчивости:
+      result.robustness = "high";
       return result;
     }
 
+    // Функция перезагрузки страницы
     function reloadPage() {
       console.log("Reloading page...");
       if (window.jsBridge && typeof window.jsBridge.postMessage === "function") {
-        window.jsBridge.postMessage('pageReloaded');
+        window.jsBridge.postMessage("pageReloaded");
       }
       window.location.reload();
     }
   </script>
 
-  <!-- Подключаем библиотеку капчи с defer, чтобы HTML уже был загружен -->
+  <!-- Подключаем библиотеку капчи; defer гарантирует, что HTML уже загружен -->
   <script src="https://smartcaptcha.yandexcloud.net/captcha.js" defer></script>
 </head>
 <body>
-  <noscript>
-    You need to enable JavaScript to run this app.
-  </noscript>
+  <noscript>You need to enable JavaScript to run this app.</noscript>
+  <!-- Контейнер для капчи -->
   <div id="captcha-container" class="smart-captcha" style="height: 100px"
        data-sitekey="ysc1_G6HSMHbwOOZhDZbyHCbQt7w3mU9AfX9mp0eiiq3Zb8929ea1">
   </div>
