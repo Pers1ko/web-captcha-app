@@ -3,7 +3,7 @@ import requests
 
 app = Flask(__name__)
 
-SMARTCAPTCHA_SERVER_KEY = "ysc2_G6HSMHbwOOZhDZbyHCbQB5i2BhdbqXOcQBNMirdcf9b8ab6a"
+SMARTCAPTCHA_SERVER_KEY = ""
 
 # тестовый эндпоинт
 @app.route('/', methods=['GET'])
