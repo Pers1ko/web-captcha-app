@@ -1,117 +1,108 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>SmartCaptcha Mobile</title>
-    <meta charset="UTF-8" />
-    <meta
-            name="viewport"
-            content="width=device-width, initial-scale=1, shrink-to-fit=no"
-    />
-    <script>
-        function onSmartCaptchaReady() {
-          console.log("SmartCaptcha is ready");
-          if (!window.smartCaptcha) {
-            console.error("SmartCaptcha is not present");
-            return;
-          }
+  <meta charset="UTF-8" />
+  <title>SmartCaptcha Mobile</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
 
-          const params = getParameters();
-          console.log("Captcha parameters:", params);
-
-          const widgetId = window.smartCaptcha.render(
-            "captcha-container",
-            params
-          );
-          console.log("Widget ID:", widgetId);
-
-          window.smartCaptcha.subscribe(
-            widgetId,
-            "challenge-visible",
-            handleChallengeVisible
-          );
-
-          window.smartCaptcha.subscribe(
-            widgetId,
-            "challenge-hidden",
-            handleChallengeHidden
-          );
-
-          window.smartCaptcha.subscribe(widgetId, "success", handleSuccess);
-
-          if (params.invisible) {
-            console.log("Executing invisible CAPTCHA");
-            window.smartCaptcha.execute(widgetId);
-          }
+  <!-- Если jsBridge не определён (например, при тестировании в браузере), создаём заглушку -->
+  <script>
+    if (!window.jsBridge) {
+      window.jsBridge = {
+        postMessage: function(message) {
+          console.log("Stub jsBridge postMessage:", message);
         }
+      };
+    }
+  </script>
 
-        function handleSuccess(token) {
-          console.log("Captcha token received:", token);
-          if (window.jsBridge) {
-            console.log("Sending token to Flutter via jsBridge");
-            window.jsBridge.postMessage(token);
-          } else {
-            console.warn("jsBridge is not defined");
-          }
-        }
+  <script>
+    // Функция вызывается, когда библиотека капчи готова
+    function onSmartCaptchaReady() {
+      console.log("SmartCaptcha is ready");
 
-        function handleChallengeVisible() {
-          console.log("Challenge became visible");
-        }
+      if (!window.smartCaptcha) {
+        console.error("SmartCaptcha is not present");
+        return;
+      }
 
-        function handleChallengeHidden() {
-          console.log("Challenge hidden");
-        }
+      const params = getParameters();
+      console.log("Captcha parameters:", params);
 
-        function getParameters() {
-          const result = {};
+      const widgetId = window.smartCaptcha.render("captcha-container", params);
+      console.log("Widget ID:", widgetId);
 
-          if (!window.location.search) {
-            console.warn("No query parameters found");
-            return result;
-          }
+      window.smartCaptcha.subscribe(widgetId, "challenge-visible", handleChallengeVisible);
+      window.smartCaptcha.subscribe(widgetId, "challenge-hidden", handleChallengeHidden);
+      window.smartCaptcha.subscribe(widgetId, "success", handleSuccess);
 
-          const queryParams = new URLSearchParams(window.location.search);
+      if (params.invisible) {
+        console.log("Executing invisible CAPTCHA");
+        window.smartCaptcha.execute(widgetId);
+      }
+    }
 
-          queryParams.forEach((value, key) => {
-            result[key] = value;
-          });
+    function handleSuccess(token) {
+      console.log("Captcha token received:", token);
+      if (window.jsBridge && typeof window.jsBridge.postMessage === "function") {
+        console.log("Sending token via jsBridge");
+        window.jsBridge.postMessage(token);
+      } else {
+        console.warn("jsBridge is not defined or does not have postMessage");
+      }
+    }
 
-          result.test = result.test === "true";
-          result.invisible = result.invisible === "true";
-          result.hideShield = result.hideShield === "true";
-          result.webview = true;
+    function handleChallengeVisible() {
+      console.log("Challenge became visible");
+    }
 
-          return result;
-        }
-    </script>
+    function handleChallengeHidden() {
+      console.log("Challenge hidden");
+    }
 
-    <script>
-        function reloadPage() {
-          console.log("Reloading page...");
-          if (window.jsBridge) {
-            window.jsBridge.postMessage('pageReloaded');
-          }
-          window.location.reload();
-        }
-    </script>
+    function getParameters() {
+      const result = {};
 
-    <script
-            src="https://smartcaptcha.yandexcloud.net/captcha.js"
-            defer
-    ></script>
+      if (!window.location.search) {
+        console.warn("No query parameters found");
+        return result;
+      }
+
+      const queryParams = new URLSearchParams(window.location.search);
+      queryParams.forEach((value, key) => {
+        result[key] = value;
+      });
+
+      // Приводим параметры к булевому типу
+      result.test = result.test === "true";
+      result.invisible = result.invisible === "true";
+      result.hideShield = result.hideShield === "true";
+      result.webview = true;
+
+      return result;
+    }
+
+    function reloadPage() {
+      console.log("Reloading page...");
+      if (window.jsBridge && typeof window.jsBridge.postMessage === "function") {
+        window.jsBridge.postMessage('pageReloaded');
+      }
+      window.location.reload();
+    }
+  </script>
+
+  <!-- Подключаем библиотеку капчи с defer, чтобы HTML уже был загружен -->
+  <script src="https://smartcaptcha.yandexcloud.net/captcha.js" defer></script>
 </head>
-
 <body>
-
-<noscript>
+  <noscript>
     You need to enable JavaScript to run this app.
-</noscript>
-<div
-        style="height: 100px"
-        id="captcha-container"
-        class="smart-captcha"
-        data-sitekey="ysc1_G6HSMHbwOOZhDZbyHCbQt7w3mU9AfX9mp0eiiq3Zb8929ea1"
-></div>
-<div style="margin:20px"><button onclick="reloadPage()">Reload</button></div>
+  </noscript>
+  <div id="captcha-container" class="smart-captcha" style="height: 100px"
+       data-sitekey="ysc1_G6HSMHbwOOZhDZbyHCbQt7w3mU9AfX9mp0eiiq3Zb8929ea1">
+  </div>
+  <div style="margin:20px">
+    <button onclick="reloadPage()">Reload</button>
+  </div>
 </body>
 </html>
