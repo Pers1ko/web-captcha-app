@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>SmartCaptcha Mobile</title>
+    <meta charset="UTF-8" />
+    <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <script>
+        function onSmartCaptchaReady() {
+          if (!window.smartCaptcha) {
+            throw new Error("SmartCaptcha is not present");
+          }
+
+          const params = getParameters();
+
+          const widgetId = window.smartCaptcha.render(
+            "captcha-container",
+            params
+          );
+
+          window.smartCaptcha.subscribe(
+            widgetId,
+            "challenge-visible",
+            handleChallengeVisible
+          );
+
+          window.smartCaptcha.subscribe(
+            widgetId,
+            "challenge-hidden",
+            handleChallengeHidden
+          );
+
+          window.smartCaptcha.subscribe(widgetId, "success", handleSuccess);
+
+          if (params.invisible) {
+            window.smartCaptcha.execute(widgetId);
+          }
+        }
+
+        function handleSuccess(token) {
+          // Send the CAPTCHA token to Flutter using postMessage for webview_flutter
+          if (window.jsBridge) {
+            window.jsBridge.postMessage(token);
+          }
+        }
+
+        function handleChallengeVisible() {
+          console.log("Challenge became visible");
+        }
+
+        function handleChallengeHidden() {
+          console.log("Challenge hidden");
+        }
+
+        function getParameters() {
+          const result = {};
+
+          if (!window.location.search) {
+            return result;
+          }
+
+          const queryParams = new URLSearchParams(window.location.search);
+
+          queryParams.forEach((value, key) => {
+            result[key] = value;
+          });
+
+          result.test = result.test === "true";
+          result.invisible = result.invisible === "true";
+          result.hideShield = result.hideShield === "true";
+          result.webview = true;
+
+          return result;
+        }
+    </script>
+
+    <script>
+        function reloadPage() {
+          if (window.jsBridge) {
+            window.jsBridge.postMessage('pageReloaded');
+          }
+          window.location.reload();
+        }
+    </script>
+
+    <script
+            src="https://smartcaptcha.yandexcloud.net/captcha.js"
+            defer
+    ></script>
+</head>
+
+<body>
+
+<noscript>
+    You need to enable JavaScript to run this app.
+</noscript>
+<div
+        style="height: 100px"
+        id="captcha-container"
+        class="smart-captcha"
+        data-sitekey="ysc1_G6HSMHbwOOZhDZbyHCbQt7w3mU9AfX9mp0eiiq3Zb8929ea1"
+></div>
+<div style="margin:20px"><button onclick="reloadPage()">Reload</button></div>
+</body>
+</html>
