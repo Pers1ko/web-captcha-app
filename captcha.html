@@ -41,6 +41,7 @@
 
         function handleSuccess(token) {
           // Send the CAPTCHA token to Flutter using postMessage for webview_flutter
+            console.log("Captcha token:", token);
           if (window.jsBridge) {
             window.jsBridge.postMessage(token);
           }
